@@ -19,11 +19,11 @@
         "type": "git",
         "url": "https://github.com/Microsoft/TypeScript.git"
     },
-    "main": "./src/lib/typescript.js",
-    "typings": "./src/lib/typescript.d.ts",
+    "main": "./built/local/typescript.js",
+    "typings": "./built/local/typescript.d.ts",
     "bin": {
-        "tsc": "./bin/tsc",
-        "tsserver": "./bin/tsserver"
+        "tsc": "./built/local/tsc",
+        "tsserver": "./built/local/tsserver"
     },
     "engines": {
         "node": ">=0.8.0"
