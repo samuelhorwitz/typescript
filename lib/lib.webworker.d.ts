@@ -234,6 +234,8 @@ interface AudioBuffer {
     length: number;
     numberOfChannels: number;
     sampleRate: number;
+    copyFromChannel(destination: Float32Array, channelNumber: number, startInChannel?: number): void;
+    copyToChannel(source: Float32Array, channelNumber: number, startInChannel?: number): void;
     getChannelData(channel: number): Float32Array;
 }
 
@@ -275,6 +277,7 @@ interface Console {
     dir(value?: any, ...optionalParams: any[]): void;
     dirxml(value: any): void;
     error(message?: any, ...optionalParams: any[]): void;
+    exception(message?: string, ...optionalParams: any[]): void;
     group(groupTitle?: string): void;
     groupCollapsed(groupTitle?: string): void;
     groupEnd(): void;
@@ -284,6 +287,7 @@ interface Console {
     profile(reportName?: string): void;
     profileEnd(): void;
     select(element: any): void;
+    table(...data: any[]): void;
     time(timerName?: string): void;
     timeEnd(timerName?: string): void;
     trace(message?: any, ...optionalParams: any[]): void;
@@ -443,9 +447,9 @@ declare var Event: {
 }
 
 interface EventTarget {
-    addEventListener(type: string, listener: EventListenerOrEventListenerObject, useCapture?: boolean): void;
+    addEventListener(type: string, listener?: EventListenerOrEventListenerObject, useCapture?: boolean): void;
     dispatchEvent(evt: Event): boolean;
-    removeEventListener(type: string, listener: EventListenerOrEventListenerObject, useCapture?: boolean): void;
+    removeEventListener(type: string, listener?: EventListenerOrEventListenerObject, useCapture?: boolean): void;
 }
 
 declare var EventTarget: {
@@ -456,6 +460,7 @@ declare var EventTarget: {
 interface File extends Blob {
     lastModifiedDate: any;
     name: string;
+    webkitRelativePath: string;
 }
 
 declare var File: {
@@ -490,11 +495,11 @@ declare var FileReader: {
 
 interface IDBCursor {
     direction: string;
-    key: any;
+    key: IDBKeyRange | IDBValidKey;
     primaryKey: any;
-    source: any;
+    source: IDBObjectStore | IDBIndex;
     advance(count: number): void;
-    continue(key?: any): void;
+    continue(key?: IDBKeyRange | IDBValidKey): void;
     delete(): IDBRequest;
     update(value: any): IDBRequest;
     NEXT: string;
@@ -527,10 +532,12 @@ interface IDBDatabase extends EventTarget {
     onabort: (ev: Event) => any;
     onerror: (ev: Event) => any;
     version: number;
+    onversionchange: (ev: IDBVersionChangeEvent) => any;
     close(): void;
     createObjectStore(name: string, optionalParameters?: IDBObjectStoreParameters): IDBObjectStore;
     deleteObjectStore(name: string): void;
-    transaction(storeNames: any, mode?: string): IDBTransaction;
+    transaction(storeNames: string | string[], mode?: string): IDBTransaction;
+    addEventListener(type: "versionchange", listener: (ev: IDBVersionChangeEvent) => any, useCapture?: boolean): void;
     addEventListener(type: "abort", listener: (ev: Event) => any, useCapture?: boolean): void;
     addEventListener(type: "error", listener: (ev: ErrorEvent) => any, useCapture?: boolean): void;
     addEventListener(type: string, listener: EventListenerOrEventListenerObject, useCapture?: boolean): void;
@@ -558,11 +565,11 @@ interface IDBIndex {
     objectStore: IDBObjectStore;
     unique: boolean;
     multiEntry: boolean;
-    count(key?: any): IDBRequest;
-    get(key: any): IDBRequest;
-    getKey(key: any): IDBRequest;
-    openCursor(range?: IDBKeyRange, direction?: string): IDBRequest;
-    openKeyCursor(range?: IDBKeyRange, direction?: string): IDBRequest;
+    count(key?: IDBKeyRange | IDBValidKey): IDBRequest;
+    get(key: IDBKeyRange | IDBValidKey): IDBRequest;
+    getKey(key: IDBKeyRange | IDBValidKey): IDBRequest;
+    openCursor(range?: IDBKeyRange | IDBValidKey, direction?: string): IDBRequest;
+    openKeyCursor(range?: IDBKeyRange | IDBValidKey, direction?: string): IDBRequest;
 }
 
 declare var IDBIndex: {
@@ -581,26 +588,27 @@ declare var IDBKeyRange: {
     prototype: IDBKeyRange;
     new(): IDBKeyRange;
     bound(lower: any, upper: any, lowerOpen?: boolean, upperOpen?: boolean): IDBKeyRange;
-    lowerBound(bound: any, open?: boolean): IDBKeyRange;
+    lowerBound(lower: any, open?: boolean): IDBKeyRange;
     only(value: any): IDBKeyRange;
-    upperBound(bound: any, open?: boolean): IDBKeyRange;
+    upperBound(upper: any, open?: boolean): IDBKeyRange;
 }
 
 interface IDBObjectStore {
     indexNames: DOMStringList;
-    keyPath: string;
+    keyPath: string | string[];
     name: string;
     transaction: IDBTransaction;
-    add(value: any, key?: any): IDBRequest;
+    autoIncrement: boolean;
+    add(value: any, key?: IDBKeyRange | IDBValidKey): IDBRequest;
     clear(): IDBRequest;
-    count(key?: any): IDBRequest;
+    count(key?: IDBKeyRange | IDBValidKey): IDBRequest;
     createIndex(name: string, keyPath: string | string[], optionalParameters?: IDBIndexParameters): IDBIndex;
-    delete(key: any): IDBRequest;
+    delete(key: IDBKeyRange | IDBValidKey): IDBRequest;
     deleteIndex(indexName: string): void;
     get(key: any): IDBRequest;
     index(name: string): IDBIndex;
-    openCursor(range?: any, direction?: string): IDBRequest;
-    put(value: any, key?: any): IDBRequest;
+    openCursor(range?: IDBKeyRange | IDBValidKey, direction?: string): IDBRequest;
+    put(value: any, key?: IDBKeyRange | IDBValidKey): IDBRequest;
 }
 
 declare var IDBObjectStore: {
@@ -629,7 +637,7 @@ interface IDBRequest extends EventTarget {
     onsuccess: (ev: Event) => any;
     readyState: string;
     result: any;
-    source: any;
+    source: IDBObjectStore | IDBIndex | IDBCursor;
     transaction: IDBTransaction;
     addEventListener(type: "error", listener: (ev: ErrorEvent) => any, useCapture?: boolean): void;
     addEventListener(type: "success", listener: (ev: Event) => any, useCapture?: boolean): void;
@@ -699,7 +707,7 @@ interface MSApp {
     execAsyncAtPriority(asynchronousCallback: MSExecAtPriorityFunctionCallback, priority: string, ...args: any[]): void;
     execAtPriority(synchronousCallback: MSExecAtPriorityFunctionCallback, priority: string, ...args: any[]): any;
     getCurrentPriority(): string;
-    getHtmlPrintDocumentSourceAsync(htmlDoc: any): any;
+    getHtmlPrintDocumentSourceAsync(htmlDoc: any): PromiseLike<any>;
     getViewId(view: any): any;
     isTaskScheduledAtPriorityOrHigher(priority: string): boolean;
     pageHandlesAllApplicationActivations(enabled: boolean): void;
@@ -911,7 +919,6 @@ interface XMLHttpRequest extends EventTarget, XMLHttpRequestEventTarget {
     onreadystatechange: (ev: ProgressEvent) => any;
     readyState: number;
     response: any;
-    responseBody: any;
     responseText: string;
     responseType: string;
     responseXML: any;
@@ -1110,16 +1117,6 @@ interface WorkerUtils extends Object, WindowBase64 {
     setTimeout(handler: any, timeout?: any, ...args: any[]): number;
 }
 
-interface IDBObjectStoreParameters {
-    keyPath?: string | string[];
-    autoIncrement?: boolean;
-}
-
-interface IDBIndexParameters {
-    unique?: boolean;
-    multiEntry?: boolean;
-}
-
 interface BlobPropertyBag {
     type?: string;
     endings?: string;
@@ -1149,6 +1146,180 @@ interface ProgressEventInit extends EventInit {
     total?: number;
 }
 
+interface IDBArrayKey extends Array<IDBValidKey> {
+}
+
+interface RsaKeyGenParams extends Algorithm {
+    modulusLength: number;
+    publicExponent: Uint8Array;
+}
+
+interface RsaHashedKeyGenParams extends RsaKeyGenParams {
+    hash: AlgorithmIdentifier;
+}
+
+interface RsaKeyAlgorithm extends KeyAlgorithm {
+    modulusLength: number;
+    publicExponent: Uint8Array;
+}
+
+interface RsaHashedKeyAlgorithm extends RsaKeyAlgorithm {
+    hash: AlgorithmIdentifier;
+}
+
+interface RsaHashedImportParams {
+    hash: AlgorithmIdentifier;
+}
+
+interface RsaPssParams {
+    saltLength: number;
+}
+
+interface RsaOaepParams extends Algorithm {
+    label?: BufferSource;
+}
+
+interface EcdsaParams extends Algorithm {
+    hash: AlgorithmIdentifier;
+}
+
+interface EcKeyGenParams extends Algorithm {
+    typedCurve: string;
+}
+
+interface EcKeyAlgorithm extends KeyAlgorithm {
+    typedCurve: string;
+}
+
+interface EcKeyImportParams {
+    typedCurve: string;
+}
+
+interface EcdhKeyDeriveParams extends Algorithm {
+    public: CryptoKey;
+}
+
+interface AesCtrParams extends Algorithm {
+    counter: BufferSource;
+    length: number;
+}
+
+interface AesKeyAlgorithm extends KeyAlgorithm {
+    length: number;
+}
+
+interface AesKeyGenParams extends Algorithm {
+    length: number;
+}
+
+interface AesDerivedKeyParams extends Algorithm {
+    length: number;
+}
+
+interface AesCbcParams extends Algorithm {
+    iv: BufferSource;
+}
+
+interface AesCmacParams extends Algorithm {
+    length: number;
+}
+
+interface AesGcmParams extends Algorithm {
+    iv: BufferSource;
+    additionalData?: BufferSource;
+    tagLength?: number;
+}
+
+interface AesCfbParams extends Algorithm {
+    iv: BufferSource;
+}
+
+interface HmacImportParams extends Algorithm {
+    hash?: AlgorithmIdentifier;
+    length?: number;
+}
+
+interface HmacKeyAlgorithm extends KeyAlgorithm {
+    hash: AlgorithmIdentifier;
+    length: number;
+}
+
+interface HmacKeyGenParams extends Algorithm {
+    hash: AlgorithmIdentifier;
+    length?: number;
+}
+
+interface DhKeyGenParams extends Algorithm {
+    prime: Uint8Array;
+    generator: Uint8Array;
+}
+
+interface DhKeyAlgorithm extends KeyAlgorithm {
+    prime: Uint8Array;
+    generator: Uint8Array;
+}
+
+interface DhKeyDeriveParams extends Algorithm {
+    public: CryptoKey;
+}
+
+interface DhImportKeyParams extends Algorithm {
+    prime: Uint8Array;
+    generator: Uint8Array;
+}
+
+interface ConcatParams extends Algorithm {
+    hash?: AlgorithmIdentifier;
+    algorithmId: Uint8Array;
+    partyUInfo: Uint8Array;
+    partyVInfo: Uint8Array;
+    publicInfo?: Uint8Array;
+    privateInfo?: Uint8Array;
+}
+
+interface HkdfCtrParams extends Algorithm {
+    hash: AlgorithmIdentifier;
+    label: BufferSource;
+    context: BufferSource;
+}
+
+interface Pbkdf2Params extends Algorithm {
+    salt: BufferSource;
+    iterations: number;
+    hash: AlgorithmIdentifier;
+}
+
+interface RsaOtherPrimesInfo {
+    r: string;
+    d: string;
+    t: string;
+}
+
+interface JsonWebKey {
+    kty: string;
+    use?: string;
+    key_ops?: string[];
+    alg?: string;
+    kid?: string;
+    x5u?: string;
+    x5c?: string;
+    x5t?: string;
+    ext?: boolean;
+    crv?: string;
+    x?: string;
+    y?: string;
+    d?: string;
+    n?: string;
+    e?: string;
+    p?: string;
+    q?: string;
+    dp?: string;
+    dq?: string;
+    qi?: string;
+    oth?: RsaOtherPrimesInfo[];
+    k?: string;
+}
+
 declare type EventListenerOrEventListenerObject = EventListener | EventListenerObject;
 
 interface ErrorEventHandler {
@@ -1176,7 +1347,7 @@ interface DecodeSuccessCallback {
     (decodedData: AudioBuffer): void;
 }
 interface DecodeErrorCallback {
-    (): void;
+    (error: DOMException): void;
 }
 interface FunctionStringCallback {
     (data: string): void;
@@ -1187,9 +1358,9 @@ declare var self: WorkerGlobalScope;
 declare function close(): void;
 declare function msWriteProfilerMark(profilerMarkName: string): void;
 declare function toString(): string;
-declare function addEventListener(type: string, listener: EventListenerOrEventListenerObject, useCapture?: boolean): void;
+declare function addEventListener(type: string, listener?: EventListenerOrEventListenerObject, useCapture?: boolean): void;
 declare function dispatchEvent(evt: Event): boolean;
-declare function removeEventListener(type: string, listener: EventListenerOrEventListenerObject, useCapture?: boolean): void;
+declare function removeEventListener(type: string, listener?: EventListenerOrEventListenerObject, useCapture?: boolean): void;
 declare var indexedDB: IDBFactory;
 declare var msIndexedDB: IDBFactory;
 declare var navigator: WorkerNavigator;
@@ -1208,3 +1379,5 @@ declare var console: Console;
 declare function addEventListener(type: "error", listener: (ev: ErrorEvent) => any, useCapture?: boolean): void;
 declare function addEventListener(type: "message", listener: (ev: MessageEvent) => any, useCapture?: boolean): void;
 declare function addEventListener(type: string, listener: EventListenerOrEventListenerObject, useCapture?: boolean): void;
+type IDBValidKey = number | string | Date | IDBArrayKey;
+type BufferSource = ArrayBuffer | ArrayBufferView;
